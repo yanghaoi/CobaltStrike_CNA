@@ -1,5 +1,6 @@
 # 0x01 简介
-	    EasyPersistent,是一个用于windows系统上权限维持的Cobalt Strike CNA 脚本。使用脚本整合了一些常用的权限维持方法，更加方便操作，避免了实际过程中比较繁琐的步骤。
+	    EasyPersistent,是一个用于windows系统上权限维持的Cobalt Strike CNA 脚本。
+	    EasyPersistent整合了一些常用的权限维持方法，使用反射DLL模块可使用API对系统服务、计划任务等常见权限维持方法进行可视化操作，非 常 好 用。
 
 ## 脚本功能菜单：
 ![](https://i.loli.net/2021/07/02/TWnuefByhIG4pUz.png)
