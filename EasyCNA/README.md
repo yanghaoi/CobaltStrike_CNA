@@ -29,6 +29,9 @@
 
 # 0x02 使用方法
 	GUI界面参数根据理解填写，可能部分位置有Bug，欢迎提交issues.
+## 示例
+
+![](https://cdn.jsdelivr.net/gh/yanghaoi/Cobalt_Strike_CNA@latest/EasyCNA/img/Easy.gif)
 ## 文件控制
 	主要是attrib、takeown、icacls、mklink几个命令的使用。
 ![attrib](https://i.loli.net/2021/07/02/roz3lRmSMKIPt9e.png)
