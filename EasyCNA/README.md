@@ -61,6 +61,9 @@
 	4. 增加进程守护功能
 	在ReflectiveDll的实现中，根据微软文档主要进行了以下功能开发：
  	1. 设置服务描述，设置多种启动类型添加，设置SDDL安全描述符
+### 服务守护进程
+
+![](https://cdn.jsdelivr.net/gh/yanghaoi/Cobalt_Strike_CNA@latest/EasyCNA/img/service.gif)
  
 ### 服务名称和显示名称在SCM中的位置
 ![](https://i.loli.net/2021/07/02/e98aHuMYl4T62NI.png)
