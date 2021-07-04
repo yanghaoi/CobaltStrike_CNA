@@ -1,0 +1,13 @@
+popup beacon_bottom {
+	menu "权限维持" {
+		@aggressor =  ls(script_resource("/Persistence/"));
+		println("[*]----加载脚本----");
+		foreach $file (@aggressor){ 
+			if(substr($file, -3) eq "cna"){
+				include($file);
+				println("[+] $file");
+			}
+			}
+		}
+}
+
