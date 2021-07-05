@@ -4,7 +4,7 @@
 在使用CobaltStrike上使用CVE-2020-0796提权
 
 ## 0x02 EasyCNA
-CobaltStrike 插件,更新中...
+CobaltStrike 插件,Persistence 为权限维持脚本;更新中...
 
 ## 0x03 ReflectiveDllModules
 ### ExitService
