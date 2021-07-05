@@ -515,7 +515,7 @@ menu "计划任务"{
 					drow_text($Dialog, "runuser", "启动身份: "); 
 				}
 				else{
-					drow_combobox($Dialog, "runuser", "启动身份: ", @($user,"NT AUTHORITY\\SYSTEM","\\Everyone","Local Service"));   # 如果用户是 Administrator,那可以通过选择 SYSTEM选项提权
+					drow_combobox($Dialog, "runuser", "启动身份: ", @($user,"NT AUTHORITY\\SYSTEM","Local Service"));   # 如果用户是 Administrator,那可以通过选择 SYSTEM选项提权
 				}
 				
 				drow_combobox($Dialog, "dotype", "触发方式: ", @("ONBOOT","ONLOGON","ONIDLE","ONEVENT","ONCE","DAILY","WEEKLY","MONTHLY","SESSION_STATE_CHANGE"));
@@ -622,8 +622,8 @@ sub AddSchtasks{
 	#执行一次
 	else if($dotype eq "ONCE"){
 		if($ST eq ""){
-			$Dialog = dialog("Once设置开始时间",%(taskname => $taskname,taskwhere =>  $taskwhere ,taskinfo => $taskinfo ,runuser => $runuser,taskrun => $taskrun ,dotype => $dotype ,ST => formatDate(ticks() + (1000 * 60 * 2), "HH:mm") ,type => "schtasks",level => $level,bid => $bid),&AddSchtasks);
-			dialog_description($Dialog, "用于一次性计划任务,请设置开始时间,时间格式为 HH:mm (24 小时时间),默认2分钟后启动。"); 
+			$Dialog = dialog("Once设置开始时间",%(taskname => $taskname,taskwhere =>  $taskwhere ,taskinfo => $taskinfo ,runuser => $runuser,taskrun => $taskrun ,dotype => $dotype ,ST => formatDate(ticks() + (1000 * 30), "HH:mm") ,type => "schtasks",level => $level,bid => $bid),&AddSchtasks);
+			dialog_description($Dialog, "用于一次性计划任务,请设置开始时间,时间格式为 HH:mm (24 小时时间),默认30秒后启动。"); 
 			drow_text($Dialog, "taskname", "任务名称(/TN): ");
 			drow_text($Dialog, "ST", "开始时间: ");
 			dbutton_action($Dialog, "AddSchtasks");
@@ -766,7 +766,7 @@ sub AddSchtasks_API{
 		bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"), "/Task_Scheduler/reflective_dll.dll"),$Data, "AddSchtasks_API ", 5000);
 	}else{   #每天在设置的时间执行，每周5执行，每月13号执行
 		if($Runtime eq ""){
-			$Dialog = dialog("设置计划任务开始时间",%(taskname => $taskname,taskinfo => $taskinfo,taskrun => $taskrun,runuser => $runuser,dotype => $dotype,CreateIs => $CreateIs,Runtime => (formatDate((ticks()+(3600 * 10 * 2)),"yyyy-MM-dd'T'HH:mm:ss")),bid => $bid),&AddSchtasks_API);
+			$Dialog = dialog("设置计划任务开始时间",%(taskname => $taskname,taskinfo => $taskinfo,taskrun => $taskrun,runuser => $runuser,dotype => $dotype,CreateIs => $CreateIs,Runtime => (formatDate((ticks()+(1000 * 30)),"yyyy-MM-dd'T'HH:mm:ss")),bid => $bid),&AddSchtasks_API);
 			dialog_description($Dialog, "反射DLL中使用API添加计划任务");
 			drow_text($Dialog, "taskname", "任务名称: ");
 			drow_text($Dialog, "Runtime", "执行时间: ");
