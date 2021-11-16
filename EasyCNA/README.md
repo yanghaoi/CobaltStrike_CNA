@@ -169,8 +169,6 @@ C:\Users\<User>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
   
 ![](https://i.loli.net/2021/07/02/a2LYiZPhTC1Gm64.png)
 
-### 已知Bug:
- - API添加中，administrator权限下无法以administrator身份启动；
 
 ### 优化选项：
 	 - 添加任务时未对文件是否存在进行判断,未增加文件上传选项；
