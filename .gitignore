@@ -1,2 +1,9 @@
-#ignore Moudles
+# ignore
 EasyCNA/Moudles/*
+*.bak
+
+# .开头的任何文件
+.*
+
+# 排除.gitignore本身，排除符号就是逻辑非
+!/.gitignore
