@@ -1,8 +1,8 @@
 # Cobalt_Strike_CNA
 
 ## 0x01 EasyCNA  
-插件开发
-1. Persistence  
+插件开发： <a href="https://github.com/yanghaoi/CobaltStrike_CNA/tree/main/EasyCNA"> EasyCNA </a>
+1. Persistence   
 
 ## 0x02 ReflectiveDllSource  
 反射DLL源码
