@@ -123,7 +123,7 @@ sc triggerinfo ServiceName start/networkon
 
 
 ### 克隆用户:
-	通过 <a href="https://github.com/yanghaoi/ridhijack">ridhijack</a>实现。
+通过 <a href="https://github.com/yanghaoi/ridhijack">ridhijack</a>实现。
 
 ### 账户激活与禁用:
 	这里的功能最初是为了激活Guest的，后面增加了不同组的添加、移除、账户激活禁用，主要就是使用api进行一些操作，然后我源码找不到了...:
