@@ -123,19 +123,7 @@ sc triggerinfo ServiceName start/networkon
 
 
 ### 克隆用户:
-	同样用的是C#的内存加载,程序修改自[ShadowUser](https://github.com/An0nySec/ShadowUser)：
-  
-![](https://i.loli.net/2021/07/02/SZj36pMocXLet1D.png)
-
-![](https://i.loli.net/2021/07/02/We1TDtui2abKjVl.png)
-
-![](https://i.loli.net/2021/07/02/sMqWYgHVDSxzPNh.png)
-
-![](https://i.loli.net/2021/07/02/fbOGrpdCFNVRLao.png)
-
-	用户管理这个位置能看到：
-  
-![](https://i.loli.net/2021/07/02/JsKZMnhozie4E8a.png)
+	通过 <a href="https://github.com/yanghaoi/ridhijack">ridhijack</a>实现。
 
 ### 账户激活与禁用:
 	这里的功能最初是为了激活Guest的，后面增加了不同组的添加、移除、账户激活禁用，主要就是使用api进行一些操作，然后我源码找不到了...:
