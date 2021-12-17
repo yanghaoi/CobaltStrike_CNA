@@ -116,11 +116,11 @@ sc triggerinfo ServiceName start/networkon
 ![](https://i.loli.net/2021/07/02/eNvgYhQJ1HqF8xm.png)
 
 ### 添加用户:
-	使用CMD命令和API操作，逛Github发现有现成的[C#代码](https://github.com/v1ncilazy/BypassAddUser)，于是就懒得写DLL了，不过目标环境如果没有.Net还是需要用反射DLL：
-  
-![](https://i.loli.net/2021/07/02/JzTR9eXOZhsLwiH.png)
+	集成了CMD命令、API、参数欺骗。API添加和查询用户：
+![](https://cdn.jsdelivr.net/gh/yanghaoi/Cobalt_Strike_CNA@latest/EasyCNA/img/AddUser_api.png)
+	自带参数欺骗添加用户：
+![](https://cdn.jsdelivr.net/gh/yanghaoi/Cobalt_Strike_CNA@latest/EasyCNA/img/AddUser.png)
 
-![](https://i.loli.net/2021/07/02/MHzPo5Wv6TOYjXU.png)
 
 ### 克隆用户:
 	同样用的是C#的内存加载,程序修改自[ShadowUser](https://github.com/An0nySec/ShadowUser)：

