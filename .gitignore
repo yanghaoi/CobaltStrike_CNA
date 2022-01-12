@@ -1,5 +1,5 @@
 # ignore
-EasyCNA/Moudles/*
+Moudles/*
 *.bak
 
 # .开头的任何文件
