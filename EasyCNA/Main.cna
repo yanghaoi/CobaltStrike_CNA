@@ -1,8 +1,18 @@
+@Supports =  ls(script_resource("/Supports/"));
+	println("[*]----Load CNA----");
+	foreach $file (@Supports){ 
+		if(substr($file, -3) eq "cna"){
+			include($file);
+			println("[+] $file");
+		}
+}
+
+
 popup beacon_bottom {
 	menu "权限维持" {
-		@aggressor =  ls(script_resource("/Persistence/"));
-		println("[*]----加载脚本----");
-		foreach $file (@aggressor){ 
+		@Persistence =  ls(script_resource("/Persistence/"));
+		println("[*]----Load CNA----");
+		foreach $file (@Persistence){ 
 			if(substr($file, -3) eq "cna"){
 				include($file);
 				println("[+] $file");
