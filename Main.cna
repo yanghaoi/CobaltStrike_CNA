@@ -1,5 +1,5 @@
 @Supports =  ls(script_resource("/Supports/"));
-	println("[*]----Load CNA----");
+	println("[*]----Load Supports CNA----");
 	foreach $file (@Supports){ 
 		if(substr($file, -3) eq "cna"){
 			include($file);
@@ -8,7 +8,7 @@
 }
 
 @PrivilegeEscalation =  ls(script_resource("/PrivilegeEscalation/"));
-	println("[*]----Load CNA----");
+	println("[*]----Load PrivilegeEscalation CNA----");
 	foreach $file (@PrivilegeEscalation){ 
 		if(substr($file, -3) eq "cna"){
 			include($file);
@@ -18,9 +18,9 @@
 
 
 popup beacon_bottom {
-	menu "权限维持" {
+	menu "Persistence" {
 		@Persistence =  ls(script_resource("/Persistence/"));
-		println("[*]----Load CNA----");
+		println("[*]----Load Persistence CNA----");
 		foreach $file (@Persistence){ 
 			if(substr($file, -3) eq "cna"){
 				include($file);
