@@ -4,6 +4,9 @@
 
 # USE
 ## ./agscript 10.10.10.10 50000 neo 123 Beacon_Online.cna
+## OR nohup ./agscript 10.10.10.10 50000 neo 123 Beacon_Online.cna >/dev/null 2>&1 &
+### if Bug in (java.awt.AWTError: Can't connect to X11 window server using)
+### You need to specify the "-Djava.awt.headless=true" parameter at startup time. 
 
 # Clean
 ## run beacon_log_clean in beacon.
